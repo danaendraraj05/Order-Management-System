@@ -1,4 +1,4 @@
-# MERN Minima  🐱
+
 
 A minimal MERN starter template featuring JWT authentication and a cat-themed frontend. This template helps you quickly set up a full-stack application with a modular folder structure.
 
