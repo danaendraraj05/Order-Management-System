@@ -8,24 +8,45 @@ export const AddStoreModal = ({ isOpen, onClose }: any) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const payload = {
-      platform,
-      name: storeName,
-      storeUrl,
-      credentials: {
-        accessToken,
-        apiVersion: "2024-01",
-      },
-    };
+  const payload = {
+    platform,
+    name: storeName,
+    storeUrl,
+    credentials: {
+      accessToken,
+      apiVersion: "2024-01",
+    },
+  };
 
-    console.log("STORE PAYLOAD", payload);
-    // 🔜 will call backend API here
+  try {
+    const token = localStorage.getItem("token"); // or from useAuth
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/stores`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to add store");
+    }
 
     onClose();
-  };
+  } catch (err: any) {
+    alert(err.message);
+  }
+};
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
