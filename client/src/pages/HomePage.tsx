@@ -14,109 +14,43 @@ export const HomePage = () => {
   const [showModal, setShowModal] = useState(false);
   const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
 
-  /* ---------------- Fetch User & Stores ---------------- */
-
+  /* =====================================================
+     INITIAL LOAD
+  ===================================================== */
   useEffect(() => {
     if (!token) {
       navigate("/login");
       return;
     }
-     const init = async () => {
-        try {
-          // Fetch user
-          const userRes = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/auth/me`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          const userData = await userRes.json();
-          setUsername(userData.username);
 
-          // Fetch stores
-          const storeRes = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/stores`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          const storeData = await storeRes.json();
-          setStores(storeData);
-
-          // ✅ AUTO SYNC FIRST CONNECTED STORE
-          const connectedStore = storeData.find(
-            (s: any) => s.status === "CONNECTED"
-          );
-
-          if (connectedStore) {
-            await autoSyncOrders(connectedStore._id);
-          }
-
-        } catch (err) {
-          navigate("/login");
-        } finally {
-          setLoadingStores(false);
-        }
-      };
-
-    init();
-
-    const fetchUser = async () => {
+    const init = async () => {
       try {
-        const res = await fetch(
+        const userRes = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/auth/me`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        const data = await res.json();
-        setUsername(data.username);
+        const userData = await userRes.json();
+        setUsername(userData.username);
+
+        const storeRes = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/stores`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const storeData = await storeRes.json();
+        setStores(storeData);
       } catch {
         navigate("/login");
-      }
-    };
-
-    const fetchStores = async () => {
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/stores`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const data = await res.json();
-        setStores(data);
-      } catch {
-        console.error("Failed to fetch stores");
       } finally {
         setLoadingStores(false);
       }
     };
 
-    const autoSyncOrders = async (storeId: string) => {
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/stores/${storeId}/sync`,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        const data = await res.json();
-        if (!res.ok) return;
-
-        // populate orders on page load
-        setOrders(data.orders);
-
-      } catch (err) {
-        console.error("Auto sync failed", err);
-      }
-    };
-
-
-    fetchUser();
-    fetchStores();
+    init();
   }, [token]);
 
-  /* ---------------- Sync Orders (Live) ---------------- */
-
+  /* =====================================================
+     SYNC ORDERS (CONCATENATED + SAFE)
+  ===================================================== */
   const syncOrders = async (storeId: string) => {
     try {
       setSyncingStoreId(storeId);
@@ -132,17 +66,25 @@ export const HomePage = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // ✅ store orders in state (LIVE DATA)
-      setOrders(data.orders);
+      setOrders((prevOrders) => {
+        // Remove old orders of THIS store only
+        const filtered = prevOrders.filter(
+          (o) => o.storeId !== data.storeId
+        );
+
+        // Merge + sort by date (latest first)
+        return [...filtered, ...data.orders].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() -
+            new Date(a.createdAt).getTime()
+        );
+      });
 
       alert(`Synced ${data.totalOrders} orders from ${data.storeName}`);
 
-      // Refresh stores to update lastSyncAt
       const storesRes = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/stores`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setStores(await storesRes.json());
     } catch (err: any) {
@@ -152,20 +94,17 @@ export const HomePage = () => {
     }
   };
 
+  /* =====================================================
+     REVENUE TODAY
+  ===================================================== */
   const calculateRevenueToday = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  return orders
-    .filter((order) => {
-      const orderDate = new Date(order.createdAt);
-      return orderDate >= today;
-    })
-    .reduce((sum, order) => {
-      return sum + Number(order.total || 0);
-    }, 0);
-};
-
+    return orders
+      .filter((order) => new Date(order.createdAt) >= today)
+      .reduce((sum, order) => sum + Number(order.total || 0), 0);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#020617] to-black px-6 py-24">
@@ -193,21 +132,19 @@ export const HomePage = () => {
         </div>
       </div>
 
-      {/* Connected Stores */}
+      {/* Stores */}
       <div className="max-w-7xl mx-auto mb-12">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-medium text-white">
-              Connected Stores
-            </h2>
+            <h2 className="text-lg font-medium text-white">Connected Stores</h2>
             <p className="text-sm text-gray-400">
-              Manage your store connections and credentials
+              Manage your store connections
             </p>
           </div>
 
           <button
             onClick={() => setShowModal(true)}
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10 transition"
+            className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
           >
             + Add Store
           </button>
@@ -223,7 +160,7 @@ export const HomePage = () => {
             <p className="text-gray-400 text-sm">Loading stores...</p>
           ) : stores.length === 0 ? (
             <p className="text-gray-400 text-sm">
-              No stores connected yet. Add your first store.
+              No stores connected yet
             </p>
           ) : (
             stores.map((store) => (
@@ -246,7 +183,7 @@ export const HomePage = () => {
         </div>
       </div>
 
-      {/* Orders Table */}
+      {/* Orders */}
       <div className="max-w-7xl mx-auto">
         <h2 className="text-lg font-medium text-white mb-3">
           Recent Orders
@@ -268,19 +205,16 @@ export const HomePage = () => {
             <tbody>
               {orders.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-6 text-center text-gray-400"
-                  >
+                  <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
                     No orders synced yet
                   </td>
                 </tr>
               ) : (
                 orders.map((order) => (
                   <OrderRow
-                    key={order.id}
+                    key={`${order.storeId}-${order.id}`}
                     id={order.orderNumber}
-                    platform="Shopify"
+                    platform={order.platform}
                     store={order.store}
                     customer={order.customer}
                     amount={`$${order.total}`}
@@ -297,7 +231,9 @@ export const HomePage = () => {
   );
 };
 
-/* ---------------- Components ---------------- */
+/* =====================================================
+   UI COMPONENTS
+===================================================== */
 
 const Stat = ({ label, value, highlight }: any) => (
   <div>
@@ -317,7 +253,7 @@ const StoreCard = ({
   syncing,
   onSync,
 }: any) => (
-  <div className="rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl p-5 shadow-lg">
+  <div className="rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl p-5">
     <h3 className="text-white font-medium">
       {name}
       <span
