@@ -13,6 +13,8 @@ export const HomePage = () => {
   const [loadingStores, setLoadingStores] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
 
   /* =====================================================
      INITIAL LOAD
@@ -38,6 +40,11 @@ export const HomePage = () => {
         );
         const storeData = await storeRes.json();
         setStores(storeData);
+        for (const store of storeData) {
+          if (store.status === "CONNECTED") {
+            syncOrders(store._id);
+          }
+        }
       } catch {
         navigate("/login");
       } finally {
@@ -48,12 +55,28 @@ export const HomePage = () => {
     init();
   }, [token]);
 
+
+  const refreshStores = async () => {
+    try {
+      setLoadingStores(true);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/stores`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setStores(await res.json());
+    } finally {
+      setLoadingStores(false);
+    }
+  };
+
+
   /* =====================================================
      SYNC ORDERS (CONCATENATED + SAFE)
   ===================================================== */
   const syncOrders = async (storeId: string) => {
     try {
       setSyncingStoreId(storeId);
+      setSyncMessage(null);
 
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/stores/${storeId}/sync`,
@@ -67,20 +90,28 @@ export const HomePage = () => {
       if (!res.ok) throw new Error(data.message);
 
       setOrders((prevOrders) => {
-        // Remove old orders of THIS store only
-        const filtered = prevOrders.filter(
-          (o) => o.storeId !== data.storeId
-        );
+        const map = new Map<string, any>();
 
-        // Merge + sort by date (latest first)
-        return [...filtered, ...data.orders].sort(
+        for (const o of prevOrders) {
+          map.set(`${o.storeId}-${o.id}`, o);
+        }
+
+        for (const o of data.orders) {
+          map.set(`${o.storeId}-${o.id}`, o);
+        }
+
+        return Array.from(map.values()).sort(
           (a, b) =>
             new Date(b.createdAt).getTime() -
             new Date(a.createdAt).getTime()
         );
       });
 
-      alert(`Synced ${data.totalOrders} orders from ${data.storeName}`);
+      setSyncMessage(
+        `✔ Synced ${data.totalOrders} orders from ${data.storeName}`
+      );
+
+      setTimeout(() => setSyncMessage(null), 3000);
 
       const storesRes = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/stores`,
@@ -88,11 +119,12 @@ export const HomePage = () => {
       );
       setStores(await storesRes.json());
     } catch (err: any) {
-      alert(err.message || "Sync failed");
+      setSyncMessage(err.message || "Sync failed");
     } finally {
       setSyncingStoreId(null);
     }
   };
+
 
   /* =====================================================
      REVENUE TODAY
@@ -118,6 +150,14 @@ export const HomePage = () => {
           Unified order management across WooCommerce and Shopify
         </p>
       </div>
+      {syncMessage && (
+        <div className="max-w-7xl mx-auto mb-4">
+          <div className="rounded-lg bg-green-500/20 px-4 py-2 text-sm text-green-400">
+            {syncMessage}
+          </div>
+        </div>
+      )}
+
 
       {/* Stats */}
       <div className="max-w-7xl mx-auto mb-10">
@@ -153,7 +193,9 @@ export const HomePage = () => {
         <AddStoreModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
+          onSuccess={refreshStores}
         />
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {loadingStores ? (

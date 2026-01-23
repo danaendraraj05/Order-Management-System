@@ -1,6 +1,10 @@
 import { useState } from "react";
 
-export const AddStoreModal = ({ isOpen, onClose }: any) => {
+export const AddStoreModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}: any) => {
   const [platform, setPlatform] = useState<"shopify" | "woocommerce">("shopify");
   const [storeName, setStoreName] = useState("");
   const [storeUrl, setStoreUrl] = useState("");
@@ -58,11 +62,14 @@ export const AddStoreModal = ({ isOpen, onClose }: any) => {
         throw new Error(data.message || "Failed to add store");
       }
 
+      // 🔥 IMPORTANT
+      onSuccess(data); // notify parent
       onClose();
     } catch (err: any) {
       alert(err.message);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
