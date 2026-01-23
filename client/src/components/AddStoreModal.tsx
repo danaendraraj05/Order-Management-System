@@ -16,6 +16,16 @@ export const AddStoreModal = ({
   const [consumerKey, setConsumerKey] = useState("");
   const [consumerSecret, setConsumerSecret] = useState("");
 
+  const resetForm = () => {
+  setPlatform("shopify");
+  setStoreName("");
+  setStoreUrl("");
+  setAccessToken("");
+  setConsumerKey("");
+  setConsumerSecret("");
+};
+
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,6 +74,7 @@ export const AddStoreModal = ({
 
       // 🔥 IMPORTANT
       onSuccess(data); // notify parent
+      resetForm();
       onClose();
     } catch (err: any) {
       alert(err.message);
