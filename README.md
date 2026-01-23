@@ -199,14 +199,6 @@ OMS displays the total exactly as received from the platform.
 
 ---
 
-## ⚠️ Limitations
-
-* Orders are fetched on demand (not cached)
-* Page refresh requires re-sync
-* High traffic stores may hit API limits
-
----
-
 ## 🧪 Testing
 
 ### Shopify
