@@ -1,115 +1,259 @@
+# 📦 Order Management System (OMS)
 
+A unified **Order Management System** that connects **Shopify** and **WooCommerce** stores and displays orders in a single dashboard.
 
-A minimal MERN starter template featuring JWT authentication and a cat-themed frontend. This template helps you quickly set up a full-stack application with a modular folder structure.
-
----
-
-## Quick Start
-
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/iamsaura8h/MERN-Minima.git
-    ```
-2. Remove the existing git folder:
-    ```bash
-    cd MERN-Minima
-    rm -rf .git
-    ```
-3. Initialize a new git repository:
-    ```bash
-    git init
-    git add .
-    git commit -m "Initial commit"
-    ```
-4. Install dependencies in both directories:
-    ```bash
-    cd backend
-    npm install
-    cd ../frontend
-    npm install
-    ```
-5. Add `.env` files with the following values:
-    - **backend/.env**
-      ```
-      MONGO_URI=mongodb://localhost:27017/minima
-      JWT_SECRET=your_jwt_secret
-      ```
-    - **frontend/.env**
-      ```
-      VITE_API_BASE_URL=http://localhost:5000
-      VITE_CAT_API=https://cataas.com/cat?json=true
-      ```
-6. Start the backend and frontend servers:
-    ```bash
-    # In backend/
-    node index.js
-
-    # In frontend/
-    npm run dev
-    ```
-
-Your MERN app is now ready for development.
-
---- 
-## Features
-
-- **Backend:** Express and MongoDB (ESM modules)
-- **Frontend:** React, Vite, TypeScript, and Tailwind CSS
-- JWT authentication with `username` and `password` (optional `email`)
-- Protected routes (Home page)
-- Dynamic navbar (shows login/logout)
-- Landing page with random cat images
-- Simple and easy-to-understand folder structure
+This project fetches orders **directly via REST APIs** (no webhooks required) and supports syncing multiple stores per user.
 
 ---
 
-## Folder Structure
+## 🚀 Features
+
+* ✅ Connect multiple Shopify & WooCommerce stores
+* ✅ Secure backend-only credential handling
+* ✅ Live order sync from both platforms
+* ✅ Combined (concatenated) order list
+* ✅ Revenue calculation
+* ✅ Cloudways-compatible (REST API supported)
+
+---
+
+## 🧱 Tech Stack
+
+### Backend
+
+* Node.js
+* Express
+* MongoDB
+* Axios / Fetch
+* JWT Authentication
+
+### Frontend
+
+* React (Vite)
+* Tailwind CSS
+* Context API (Auth)
+* REST API integration
+
+### Hosting
+
+* WooCommerce: **Cloudways**
+* Shopify: Shopify Cloud
+* Backend: Any Node-compatible host
+
+---
+
+## 🛒 Shopify Store Setup
+
+### 1️⃣ Create a Custom App
+
+1. Go to **Shopify Admin**
+2. Navigate to:
+
+   ```
+   Settings → Apps and sales channels
+   ```
+3. Click **Develop apps**
+4. Click **Create an app**
+5. Name it (e.g. `OMS App`)
+
+---
+
+### 2️⃣ Configure API Permissions
+
+Inside the app → **Configuration**:
+
+Enable:
+
+* `read_orders`
+* `read_customers` (optional)
+* `read_products` (optional)
+
+Save changes.
+
+---
+
+### 3️⃣ Install App & Get Access Token
+
+1. Go to **API credentials**
+2. Click **Install app**
+3. Copy the **Admin API Access Token**
+
+Token format:
 
 ```
-backend/
-├── config/
-├── controllers/
-├── middleware/
-├── models/
-├── routes/
-└── index.js
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── contexts/
-│   ├── hooks/
-│   ├── pages/
-│   ├── App.tsx
-│   └── main.tsx
-├── .env
-└── index.html
+shpat_************
 ```
 
 ---
-## API Endpoints (Backend)
 
-| Method | Endpoint           | Description                       |
-|--------|--------------------|-----------------------------------|
-| POST   | `/api/auth/register` | Register a new user               |
-| POST   | `/api/auth/login`    | Login and receive JWT token       |
-| GET    | `/api/auth/me`       | Get current user info (protected) |
-| GET    | `/api/cat`           | Get a random cat image            |
+### 4️⃣ Add Shopify Store in OMS
 
-## Frontend Routes
+| Field        | Value                              |
+| ------------ | ---------------------------------- |
+| Platform     | Shopify                            |
+| Store Name   | Any name                           |
+| Store URL    | `https://your-store.myshopify.com` |
+| Access Token | Admin API Access Token             |
+| API Version  | `2024-01`                          |
 
-| Path         | Component/Page      | Description                |
-|--------------|--------------------|----------------------------|
-| `/`          | Landing            | Cat-themed landing page    |
-| `/login`     | Login              | User login form            |
-| `/register`  | Register           | User registration form     |
-| `/home`      | Home (Protected)   | Protected user dashboard   |
-| `*`          | NotFound           | 404 fallback page          |
+---
 
---- 
-## Support & Contribute
+## 🛍️ WooCommerce Store Setup (Cloudways)
 
-If you find this project helpful, please consider giving it a ⭐ on [GitHub](https://github.com/iamsaura8h/MERN-Minima)!  
-Your feedback, issues, and pull requests are always welcome.
+### 1️⃣ Ensure WooCommerce is Installed
 
-Thank you for checking out MERN Minima! Happy coding! 
+* WordPress Admin → Plugins
+* WooCommerce must be **installed & activated**
+
+---
+
+### 2️⃣ Generate REST API Keys
+
+1. Go to:
+
+   ```
+   WooCommerce → Settings → Advanced → REST API
+   ```
+2. Click **Add Key**
+3. Fill:
+
+   * Description: `OMS App`
+   * User: Admin user
+   * Permissions: **Read / Write**
+4. Click **Generate API key**
+
+Copy:
+
+* **Consumer Key** → `ck_********`
+* **Consumer Secret** → `cs_********`
+
+⚠️ Keys are shown only once.
+
+---
+
+### 3️⃣ Verify Permalinks (Mandatory)
+
+Go to:
+
+```
+Settings → Permalinks
+```
+
+Select:
+
+```
+Post name
+```
+
+Click **Save Changes** (even if already selected).
+
+---
+
+### 4️⃣ Add WooCommerce Store in OMS
+
+| Field           | Value                    |
+| --------------- | ------------------------ |
+| Platform        | WooCommerce              |
+| Store Name      | Any name                 |
+| Store URL       | `https://yourdomain.com` |
+| Consumer Key    | `ck_********`            |
+| Consumer Secret | `cs_********`            |
+
+---
+
+## 🔄 Order Sync Behavior
+
+* Orders are fetched **live** from the store APIs
+* No order data is permanently stored
+* Syncing one store **does not overwrite** orders from other stores
+* Orders are merged using:
+
+  ```
+  storeId + orderId
+  ```
+
+---
+
+## 💱 Currency Handling
+
+### WooCommerce
+
+```
+WooCommerce → Settings → General → Currency
+```
+
+Change currency as required (USD, EUR, etc).
+
+### OMS Display
+
+OMS displays the total exactly as received from the platform.
+
+---
+
+## 🔐 Security Notes
+
+* ❌ API credentials are **never sent to frontend**
+* ✅ Credentials are stored securely in backend
+* ✅ `/stores` API excludes credentials
+* ✅ JWT protected routes
+
+---
+
+## ⚠️ Limitations
+
+* Orders are fetched on demand (not cached)
+* Page refresh requires re-sync
+* High traffic stores may hit API limits
+
+---
+
+## 🧪 Testing
+
+### Shopify
+
+* Create a test order
+* Click **Sync Orders**
+* Verify order appears in OMS
+
+### WooCommerce
+
+* Create an order
+* Click **Sync Orders**
+* Verify order appears in OMS
+
+---
+
+## 📁 Environment Variables
+
+### Backend
+
+```env
+PORT=5000
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_secret
+```
+
+### Frontend
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+```
+
+---
+
+## 📌 Future Enhancements
+
+* Webhook-based real-time sync
+* Order caching
+* Pagination & filters
+* Currency normalization
+* Sync-all stores button
+
+---
+
+
+## 👨‍💻 Author
+
+Built for learning and experimentation with real-world OMS concepts.
+
+---
