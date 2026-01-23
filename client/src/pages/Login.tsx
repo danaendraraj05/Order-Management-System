@@ -5,12 +5,18 @@ import { useNavigate, Link } from "react-router-dom";
 export const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isLoading) return;
+
     try {
+      setIsLoading(true);
+
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/auth/login`,
         {
@@ -27,8 +33,11 @@ export const LoginPage = () => {
       navigate("/home");
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#020617] to-black px-4">
@@ -78,10 +87,19 @@ export const LoginPage = () => {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-white py-2.5 font-medium text-black hover:bg-gray-200 transition"
+            disabled={isLoading}
+            className={`
+              w-full rounded-lg py-2.5 font-medium transition
+              ${
+                isLoading
+                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                  : "bg-white text-black hover:bg-gray-200"
+              }
+            `}
           >
-            Login
+            {isLoading ? "Logging in..." : "Login"}
           </button>
+
         </form>
 
         {/* Footer */}

@@ -4,11 +4,14 @@ import { useNavigate, Link } from "react-router-dom";
 export const RegisterPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     try {
+      setIsLoading(true);
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/auth/register`,
         {
@@ -25,6 +28,8 @@ export const RegisterPage = () => {
       navigate("/login");
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -76,9 +81,17 @@ export const RegisterPage = () => {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-white py-2.5 font-medium text-black hover:bg-gray-200 transition"
+            disabled={isLoading}
+            className={`
+              w-full rounded-lg py-2.5 font-medium transition
+              ${
+                isLoading
+                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                  : "bg-white text-black hover:bg-gray-200"
+              }
+            `}
           >
-            Create Account
+            {isLoading ? "Creating..." : "Create Account"}
           </button>
         </form>
 
