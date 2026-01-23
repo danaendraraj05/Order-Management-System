@@ -3,6 +3,7 @@ import {
   createStore,
   getStores,
   syncStoreOrders,
+  testStoreConnection,
 } from "../controllers/storeController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -15,5 +16,7 @@ router.post("/", protect, createStore);
 router.get("/", protect, getStores);
 
 router.post("/:id/sync", protect, syncStoreOrders);
+
+router.get("/:id/test", protect, testStoreConnection);
 
 export default router;

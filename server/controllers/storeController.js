@@ -173,7 +173,6 @@ export const syncStoreOrders = async (req, res) => {
         order: "desc",
       });
 
-      console.log("Woo RAW RESPONSE:", response.data);
 
       if (!Array.isArray(response.data)) {
         throw new Error("Invalid WooCommerce orders response");
@@ -211,3 +210,78 @@ export const syncStoreOrders = async (req, res) => {
     });
   }
 };
+
+/* =====================================================
+   TEST STORE CONNECTION
+===================================================== */
+export const testStoreConnection = async (req, res) => {
+  try {
+    const store = await Store.findOne({
+      _id: req.params.id,
+      createdBy: req.user.id,
+    });
+
+    if (!store) {
+      return res.status(404).json({ message: "Store not found" });
+    }
+
+    /* ---------------- Shopify ---------------- */
+    if (store.platform === "shopify") {
+      try {
+        await axios.get(
+          `${store.storeUrl}/admin/api/${store.credentials.apiVersion}/shop.json`,
+          {
+            headers: {
+              "X-Shopify-Access-Token": store.credentials.accessToken,
+            },
+            timeout: 10000,
+          }
+        );
+
+        return res.json({
+          status: "CONNECTED",
+          message: "Shopify connection successful",
+        });
+      } catch {
+        return res.status(400).json({
+          status: "FAILED",
+          message: "Shopify connection failed",
+        });
+      }
+    }
+
+    /* ---------------- WooCommerce ---------------- */
+    if (store.platform === "woocommerce") {
+      try {
+        await axios.get(
+          `${store.storeUrl}/wp-json/wc/v3/system_status`,
+          {
+            params: {
+              consumer_key: store.credentials.consumerKey,
+              consumer_secret: store.credentials.consumerSecret,
+            },
+            timeout: 10000,
+          }
+        );
+
+        return res.json({
+          status: "CONNECTED",
+          message: "WooCommerce connection successful",
+        });
+      } catch {
+        return res.status(400).json({
+          status: "FAILED",
+          message: "WooCommerce connection failed",
+        });
+      }
+    }
+
+    res.status(400).json({ message: "Unsupported platform" });
+  } catch (err) {
+    res.status(500).json({
+      message: "Connection test failed",
+      error: err.message,
+    });
+  }
+};
+
