@@ -131,25 +131,8 @@ Copy:
 
 ---
 
-### 3️⃣ Verify Permalinks (Mandatory)
 
-Go to:
-
-```
-Settings → Permalinks
-```
-
-Select:
-
-```
-Post name
-```
-
-Click **Save Changes** (even if already selected).
-
----
-
-### 4️⃣ Add WooCommerce Store in OMS
+### 3️⃣ Add WooCommerce Store in OMS
 
 | Field           | Value                    |
 | --------------- | ------------------------ |
