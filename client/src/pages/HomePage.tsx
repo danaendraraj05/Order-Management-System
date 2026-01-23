@@ -14,6 +14,9 @@ export const HomePage = () => {
   const [showModal, setShowModal] = useState(false);
   const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [testingStoreId, setTestingStoreId] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<Record<string, string>>({});
+
 
 
   /* =====================================================
@@ -68,6 +71,43 @@ export const HomePage = () => {
       setLoadingStores(false);
     }
   };
+
+  const testConnection = async (storeId: string) => {
+  try {
+    setTestingStoreId(storeId);
+    setSyncMessage(null);
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/stores/${storeId}/test`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Connection failed");
+    }
+
+    setSyncMessage("✅ Connection successful");
+
+    setTimeout(() => setSyncMessage(null), 3000);
+
+    setConnectionStatus((prev) => ({
+      ...prev,
+      [storeId]: res.ok ? "CONNECTED" : "FAILED",
+    }));
+  } catch {
+    setConnectionStatus((prev) => ({
+      ...prev,
+      [storeId]: "FAILED",
+    }));
+  } finally {
+    setTestingStoreId(null);
+  }
+};
+
 
 
   /* =====================================================
@@ -211,14 +251,12 @@ export const HomePage = () => {
                 name={store.name}
                 platform={store.platform}
                 url={store.storeUrl.replace(/^https?:\/\//, "")}
-                lastSync={
-                  store.lastSyncAt
-                    ? new Date(store.lastSyncAt).toLocaleString()
-                    : "Never"
-                }
-                status={store.status}
+                lastSync={store.lastSyncAt ? new Date(store.lastSyncAt).toLocaleString() : "Never"}
+                status={connectionStatus[store._id] || store.status}
                 syncing={syncingStoreId === store._id}
+                testing={testingStoreId === store._id}
                 onSync={() => syncOrders(store._id)}
+                onTest={() => testConnection(store._id)}
               />
             ))
           )}
@@ -293,7 +331,9 @@ const StoreCard = ({
   lastSync,
   status,
   syncing,
+  testing,
   onSync,
+  onTest,
 }: any) => (
   <div className="rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl p-5">
     <h3 className="text-white font-medium">
@@ -312,17 +352,31 @@ const StoreCard = ({
     <p className="text-xs text-gray-400">{url}</p>
 
     <div className="mt-4 flex items-center justify-between">
-      <span className={`text-xs ${status === "CONNECTED" ? "text-green-400" : "text-red-400"}`}>
+      <span
+        className={`text-xs ${
+          status === "CONNECTED" ? "text-green-400" : "text-red-400"
+        }`}
+      >
         ● {status}
       </span>
 
-      <button
-        onClick={onSync}
-        disabled={syncing}
-        className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20 disabled:opacity-50"
-      >
-        {syncing ? "Syncing..." : "Sync Orders"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={onTest}
+          disabled={testing}
+          className="rounded-lg bg-blue-500/20 px-3 py-1.5 text-xs text-blue-300 hover:bg-blue-500/30 disabled:opacity-50"
+        >
+          {testing ? "Testing..." : "Test Connection"}
+        </button>
+
+        <button
+          onClick={onSync}
+          disabled={syncing}
+          className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20 disabled:opacity-50"
+        >
+          {syncing ? "Syncing..." : "Sync Orders"}
+        </button>
+      </div>
     </div>
 
     <p className="mt-2 text-xs text-gray-400">
@@ -330,6 +384,7 @@ const StoreCard = ({
     </p>
   </div>
 );
+
 
 const OrderRow = ({ id, platform, store, customer, amount, status, date }: any) => (
   <tr className="border-b border-white/5 last:border-0">
